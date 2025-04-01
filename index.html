@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Select Component</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 1em;
+      background-color: #f2f2f2;
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 1em;
+      font-size: 16px;
+    }
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+    li {
+      background: white;
+      margin-bottom: 5px;
+      padding: 10px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    li:hover {
+      background-color: #e8e8e8;
+    }
+  </style>
+</head>
+<body>
+  <h3>Search for a component:</h3>
+  <input type="text" id="search" placeholder="Start typing..." />
+  <ul id="results"></ul>
+
+  <script>
+    const tg = window.Telegram.WebApp;
+    tg.expand();
+
+    const input = document.getElementById("search");
+    const results = document.getElementById("results");
+
+    // Извлекаем параметр URL (?url=...)
+    const params = new URLSearchParams(window.location.search);
+    const apiUrl = params.get("url");
+
+    if (!apiUrl) {
+      document.body.innerHTML = '<p style="color: red;">Missing ?url= parameter in address.</p>';
+    } else {
+      fetch(apiUrl)
+        .then(res => res.json())
+        .then(data => {
+          const allComponents = data.values || [];
+
+          input.addEventListener("input", () => {
+            const query = input.value.toLowerCase();
+            results.innerHTML = "";
+            const filtered = allComponents.filter(c =>
+              c.Name?.toLowerCase().includes(query) ||
+              c.Number?.toLowerCase().includes(query)
+            );
+
+            filtered.forEach(c => {
+              const li = document.createElement("li");
+              li.textContent = `${c.Number} — ${c.Name}`;
+              li.onclick = () => {
+                tg.sendData(JSON.stringify({ selectedComponent: c }));
+                tg.close();
+              };
+              results.appendChild(li);
+            });
+          });
+        })
+        .catch(err => {
+          document.body.innerHTML = '<p style="color: red;">Failed to load data from API.</p>';
+          console.error("API error:", err);
+        });
+    }
+  </script>
+</body>
+</html>
